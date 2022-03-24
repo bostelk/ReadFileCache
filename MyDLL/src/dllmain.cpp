@@ -261,25 +261,17 @@ BOOL WINAPI ReadFileCache(HANDLE hFile, LPVOID lpBuffer, DWORD nNumberOfBytesToR
             cache_value_t value = CacheGet(FileReadCache, key);
             if (value.Buffer.BaseAddress != nullptr)
             {
-                if (value.Buffer.BaseAddress != NULL)
-                {
-                    *lpNumberOfBytesRead = value.Buffer.SizeBytes;
+                *lpNumberOfBytesRead = value.Buffer.SizeBytes;
 
-                    memcpy(lpBuffer, value.Buffer.BaseAddress, value.Buffer.SizeBytes);
+                memcpy(lpBuffer, value.Buffer.BaseAddress, value.Buffer.SizeBytes);
 
-                    SetFilePointer(hFile, value.Buffer.SizeBytes, NULL, FILE_CURRENT);
+                SetFilePointer(hFile, value.Buffer.SizeBytes, NULL, FILE_CURRENT);
 
-                    TimerStop(getTimer);
+                TimerStop(getTimer);
 
-                    AppendLog("CacheRead," + path + "," + std::to_string(position) + "," + std::to_string(nNumberOfBytesToRead) + "," + std::to_string(FileReadCache.SizeBytes) + "," + std::to_string(FileReadCache.Table.size()) + "," + std::to_string(TimerElapsed(getTimer).QuadPart));
-                    //AppendLog("Return," + std::string(Path));
-                    return TRUE;
-                }
-                else
-                {
-                    //AppendLog("Failed CacheRead," + std::string(Path));
-                    return FALSE;
-                }
+                AppendLog("CacheRead," + path + "," + std::to_string(position) + "," + std::to_string(nNumberOfBytesToRead) + "," + std::to_string(FileReadCache.SizeBytes) + "," + std::to_string(FileReadCache.Table.size()) + "," + std::to_string(TimerElapsed(getTimer).QuadPart));
+                //AppendLog("Return," + std::string(Path));
+                return TRUE;
             }
             else
             {
