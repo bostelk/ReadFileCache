@@ -1,6 +1,6 @@
 # Read File Cache
 
-Inject a read file cache into a process. Work in progress. To measure and test improvements to Path of Exile.
+Inject a read file cache into a process. Work in progress. To measure and test improvements to Path of Exile. This work is a fork of [DLL Injector](https://github.com/TomerGibor/DLLInjector).
 
 # DLL Injector
 
