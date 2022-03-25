@@ -216,7 +216,8 @@ BOOL WINAPI ReadFileCache(HANDLE hFile, LPVOID lpBuffer, DWORD nNumberOfBytesToR
 
         if (!CacheExist(FileReadCache, key))
         {
-            AppendLog("CacheMiss," + path + "," + std::to_string(position) + "," + std::to_string(nNumberOfBytesToRead));
+            timer_t missTimer = {};
+            TimerStart(missTimer);
 
             BOOL ret = ReadFileOriginal(hFile, lpBuffer, nNumberOfBytesToRead, lpNumberOfBytesRead, lpOverlapped);
             if (ret == TRUE)
@@ -235,18 +236,21 @@ BOOL WINAPI ReadFileCache(HANDLE hFile, LPVOID lpBuffer, DWORD nNumberOfBytesToR
 
                 if (buffer.BaseAddress != NULL)
                 {
-                    timer_t insertTimer = {};
-                    TimerStart(insertTimer);
-
                     memcpy(buffer.BaseAddress, lpBuffer, buffer.SizeBytes);
 
                     cache_value_t value = {};
                     value.Buffer = buffer;
+
+                    timer_t insertTimer = {};
+                    TimerStart(insertTimer);
+
                     CacheInsert(FileReadCache, key, value);
 
                     TimerStop(insertTimer);
+                    TimerStop(missTimer);
 
                     AppendLog("CacheInsert," + path + "," + std::to_string(position) + "," + std::to_string(nNumberOfBytesToRead) + "," + std::to_string(TimerElapsed(insertTimer).QuadPart) + "," + std::to_string(FileReadCache.SizeBytes) + "," + std::to_string(FileReadCache.Table.size()));
+                    AppendLog("CacheMiss," + path + "," + std::to_string(position) + "," + std::to_string(nNumberOfBytesToRead) + "," + std::to_string(TimerElapsed(missTimer).QuadPart) + "," + std::to_string(FileReadCache.SizeBytes) + "," + std::to_string(FileReadCache.Table.size()));
                     //AppendLog("Return," + std::string(Path));
                     return TRUE;
                 }
@@ -264,10 +268,8 @@ BOOL WINAPI ReadFileCache(HANDLE hFile, LPVOID lpBuffer, DWORD nNumberOfBytesToR
         }
         else
         {
-            AppendLog("CacheHit," + path + "," + std::to_string(position) + "," + std::to_string(nNumberOfBytesToRead));
-
-            timer_t getTimer = {};
-            TimerStart(getTimer);
+            timer_t hitTimer = {};
+            TimerStart(hitTimer);
 
             cache_value_t value = CacheGet(FileReadCache, key);
             if (value.Buffer.BaseAddress != nullptr)
@@ -278,9 +280,9 @@ BOOL WINAPI ReadFileCache(HANDLE hFile, LPVOID lpBuffer, DWORD nNumberOfBytesToR
 
                 SetFilePointer(hFile, value.Buffer.SizeBytes, NULL, FILE_CURRENT);
 
-                TimerStop(getTimer);
+                TimerStop(hitTimer);
 
-                AppendLog("CacheRead," + path + "," + std::to_string(position) + "," + std::to_string(nNumberOfBytesToRead) + "," + std::to_string(TimerElapsed(getTimer).QuadPart) + "," + std::to_string(FileReadCache.SizeBytes) + "," + std::to_string(FileReadCache.Table.size()));
+                AppendLog("CacheHit," + path + "," + std::to_string(position) + "," + std::to_string(nNumberOfBytesToRead) + "," + std::to_string(TimerElapsed(hitTimer).QuadPart) + "," + std::to_string(FileReadCache.SizeBytes) + "," + std::to_string(FileReadCache.Table.size()));
                 //AppendLog("Return," + std::string(Path));
                 return TRUE;
             }
