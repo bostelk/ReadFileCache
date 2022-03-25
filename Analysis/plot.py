@@ -32,9 +32,9 @@ categories = [
     "cubemap",
 ]
 
-names = ["ThreadId", "Time", "Event", "Path", "Position", "Size", "Elapsed"]
+names = ["ThreadId", "Time", "Event", "Path", "Position", "Size", "Elapsed", "CacheTableSize", "CacheTableCount"]
 usecols = ["Time", "Path", "Elapsed"]
-df = pd.read_csv("..\\trace3\\input.csv", names=names, usecols=names)
+df = pd.read_csv("..\\x64\\Release\\log-2022-03-24 22-58-56.txt", names=names, usecols=names)
 
 # required for case insensitive contians.
 df['Path'] = df['Path'].str.lower()
@@ -252,13 +252,28 @@ def plot_reads_elapsed_dist2(df):
     plt.clf()
 
 
-def calc_cache_hit_rate(df):
+def print_cache_hit_rate(df):
     cache_hit = len(df.query("Event == 'CacheHit'").index)
     cache_miss = len(df.query("Event == 'CacheMiss'").index)
-    return cache_hit / (cache_hit + cache_miss)
+    cache_hit_rate = cache_hit / (cache_hit + cache_miss)
+    print("Cache hit rate = %.2f" % (cache_hit_rate))
 
 
-cache_hit_rate = calc_cache_hit_rate(df)
-print(cache_hit_rate)
+def print_event_elapsed_min_max_avg(df, event_name):
+    event_df = df.query("Event == '%s'" % event_name)
+    elapsed_min = event_df['Elapsed'].min()
+    elapsed_max = event_df['Elapsed'].max()
+    elapsed_avg = event_df['Elapsed'].mean()
+    print("%s min %.2fus, max %.2fms, avg %.2fus." % (event_name, elapsed_min, elapsed_max / 1e3, elapsed_avg))
+
+
+def print_cache_time(df):
+    print_event_elapsed_min_max_avg(df, 'CacheInsert')
+    print_event_elapsed_min_max_avg(df, 'CacheHit')
+    print_event_elapsed_min_max_avg(df, 'CacheMiss')
+
+
+print_cache_hit_rate(df)
+print_cache_time(df)
 # plot_reads_size_dist(df)
 # plot_reads_elapsed_dist(df)
