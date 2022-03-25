@@ -137,8 +137,19 @@ BOOL APIENTRY DllMain( HMODULE hModule,
         // Directory path to "MyDll.dll".
         std::string directory = GetModuleDirectory(hModule);
 
+        struct tm localtime;
+        __time64_t nowtime;
+
+        // Get time as 64-bit integer.
+        _time64(&nowtime);
+        // Convert to local time.
+        _localtime64_s(&localtime, &nowtime);
+
+        char mbstr[100];
+        std::strftime(mbstr, sizeof(mbstr), "%F %H-%M-%S", &localtime);
+
         // Write log file next to DLL.
-        LogFilePath = directory + "\\log.txt";
+        LogFilePath = directory + "\\log-" + std::string(mbstr) + ".txt";
 
         AppendLog("Process Attach");
 
