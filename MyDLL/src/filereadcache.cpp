@@ -83,10 +83,16 @@ void CacheRefreshLastAccess(cache_value_t& value)
 
 bool CachePath(std::string path)
 {
-    // Cache everything.
-    //return !path.empty();
-    // Cache everything except music.
-    return !path.empty() && std::string(path).find("Music") == std::string::npos;
+    // Exclude unknown files.
+    bool result = !path.empty();
+
+    // Exclude files that do not affect gameplay.
+    result = result && std::string(path).find("Music") == std::string::npos;
+    result = result && std::string(path).find("Ambient") == std::string::npos;
+    result = result && std::string(path).find("Video") == std::string::npos;
+
     // Cache FMOD reads because of their frequency.
-    return std::string(path).find("FMOD") != std::string::npos && std::string(path).find("Music") == std::string::npos;
+    // return std::string(path).find("FMOD") != std::string::npos;
+
+    return result;
 }
