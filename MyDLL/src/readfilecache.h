@@ -65,9 +65,15 @@ struct file_read_cache_t
     std::mutex Mutex;
 };
 
+// Global
+extern file_read_cache_t FileReadCache;
+
 // Insert new item into cache. Will replace new item according to replacement policy (LRU).
 void CacheInsert(file_read_cache_t& cache, cache_key_t key, cache_value_t value);
 cache_value_t CacheGet(file_read_cache_t& cache, cache_key_t key);
 void CacheRefreshLastAccess(cache_value_t& value);
 bool CacheExist(file_read_cache_t& cache, cache_key_t key);
 bool CachePath(std::string path);
+
+// Hook function.
+BOOL WINAPI ReadFileCache(HANDLE hFile, LPVOID lpBuffer, DWORD nNumberOfBytesToRead, LPDWORD lpNumberOfBytesRead, LPOVERLAPPED lpOverlapped);

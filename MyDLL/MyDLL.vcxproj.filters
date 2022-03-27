@@ -18,7 +18,7 @@
     <None Include="cpp.hint" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\filereadcache.h">
+    <ClInclude Include="src\readfilecache.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\timer.h">
@@ -36,9 +36,21 @@
     <ClInclude Include="src\pch.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\backward.hpp">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\readfiletrace.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\sys.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\readfileoriginal.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\filereadcache.cpp">
+    <ClCompile Include="src\readfilecache.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\timer.cpp">
@@ -51,6 +63,18 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\pch.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\backward.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\readfiletrace.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\winsys.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\readfileoriginal.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

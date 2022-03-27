@@ -2,6 +2,15 @@
 #include "logfile.h"
 #include "Windows.h"
 
+std::string LogFilePath = "";
+
+// Shortcut.
+void AppendLog(std::string message)
+{
+    AppendLog(LogFilePath, message);
+}
+
+
 void AppendLog(std::string filePath, std::string message)
 {
     if (filePath.empty())

@@ -2,10 +2,11 @@
 #include "pch.h"
 #include <distormx.h>
 #include <string>
-#include <chrono>
-#include "filereadcache.h"
-#include "timer.h"
+#include "sys.h"
 #include "logfile.h"
+#include "readfileoriginal.h"
+#include "readfiletrace.h"
+#include "readfilecache.h"
 
 #define is_aligned(POINTER, BYTE_COUNT) \
     (((uintptr_t)(const void *)(POINTER)) % (BYTE_COUNT) == 0)
@@ -15,58 +16,6 @@
 #else
 #define _T(x) x
 #endif
-
-BOOL WINAPI ReadFileTrace(HANDLE hFile, LPVOID lpBuffer, DWORD nNumberOfBytesToRead, LPDWORD lpNumberOfBytesRead, LPOVERLAPPED lpOverlapped);
-BOOL WINAPI ReadFileCache(HANDLE hFile, LPVOID lpBuffer, DWORD nNumberOfBytesToRead, LPDWORD lpNumberOfBytesRead, LPOVERLAPPED lpOverlapped);
-BOOL(WINAPI* ReadFileOriginal)(HANDLE hFile, LPVOID lpBuffer, DWORD nNumberOfBytesToRead, LPDWORD lpNumberOfBytesRead, LPOVERLAPPED lpOverlapped) = NULL;
-
-file_read_cache_t FileReadCache = {};
-
-std::string LogFilePath = "";
-
-// Shortcut.
-void AppendLog(std::string message)
-{
-    AppendLog(LogFilePath, message);
-}
-
-std::string GetFilePath(HANDLE hFile)
-{
-    TCHAR PathW[2048];
-    memset(PathW, 0, 2048);
-    GetFinalPathNameByHandle(hFile, PathW, 2048, VOLUME_NAME_DOS);
-
-    CHAR Path[2048];
-    memset(Path, 0, 2048);
-    WideCharToMultiByte(CP_ACP, WC_COMPOSITECHECK, PathW, 2048, Path, 2048, NULL, NULL);
-
-    return std::string(Path);
-}
-
-size_t GetFilePosition(HANDLE hFile)
-{
-    size_t highPos = 0;
-    int lowPos = SetFilePointer(hFile, 0, (PLONG)&highPos, FILE_CURRENT);
-    highPos = highPos << 32 | lowPos;
-    return highPos;
-}
-
-std::string GetModuleDirectory(HMODULE hModule)
-{
-    char buffer[2048];
-    GetModuleFileNameA(hModule, buffer, 2048);
-    AppendLog(std::string(buffer));
-
-    std::string filename(buffer);
-    std::string directory;
-    const size_t last_slash_idx = filename.rfind('\\');
-    if (std::string::npos != last_slash_idx)
-    {
-        directory = filename.substr(0, last_slash_idx);
-    }
-
-    return directory;
-}
 
 BOOL IsReadFileHooked()
 {
@@ -176,134 +125,4 @@ BOOL APIENTRY DllMain( HMODULE hModule,
     }
     }
     return TRUE;
-}
-
-BOOL WINAPI ReadFileTrace(HANDLE hFile, LPVOID lpBuffer, DWORD nNumberOfBytesToRead, LPDWORD lpNumberOfBytesRead, LPOVERLAPPED lpOverlapped)
-{
-    std::string path = GetFilePath(hFile);
-
-    size_t position = GetFilePosition(hFile);
-
-    timer_t readTimer = {};
-    TimerStart(readTimer);
-
-    BOOL ret = ReadFileOriginal(hFile, lpBuffer, nNumberOfBytesToRead, lpNumberOfBytesRead, lpOverlapped);
-
-    TimerStop(readTimer);
-
-    /*
-    if (lpOverlapped != NULL)
-    {
-        AppendLog("Overlapped");
-    }
-    */
-
-    std::string message = "ReadFile," + path + "," + std::to_string(position) + "," + std::to_string(nNumberOfBytesToRead) + "," + std::to_string(TimerElapsed(readTimer).QuadPart);
-    AppendLog(message);
-
-    return ret;
-}
-
-BOOL WINAPI ReadFileCache(HANDLE hFile, LPVOID lpBuffer, DWORD nNumberOfBytesToRead, LPDWORD lpNumberOfBytesRead, LPOVERLAPPED lpOverlapped)
-{
-    std::string path = GetFilePath(hFile);
-
-    size_t position = GetFilePosition(hFile);
-
-    if (CachePath(path))
-    {
-        cache_key_t key { path, position, nNumberOfBytesToRead };
-
-        if (!CacheExist(FileReadCache, key))
-        {
-            timer_t missTimer = {};
-            TimerStart(missTimer);
-
-            BOOL ret = ReadFileOriginal(hFile, lpBuffer, nNumberOfBytesToRead, lpNumberOfBytesRead, lpOverlapped);
-            if (ret == TRUE)
-            {
-                //AppendLog("BytesRead," + std::to_string(nNumberOfBytesToRead) + "," + std::to_string(*lpNumberOfBytesRead) + "," + std::to_string(nNumberOfBytesToRead == *lpNumberOfBytesRead) );
-
-                buffer_t buffer = {};
-                buffer.BaseAddress = malloc(nNumberOfBytesToRead);
-                buffer.SizeBytes = nNumberOfBytesToRead;
-
-                // Zero init.
-                //memset(buffer.BaseAddress, 0, buffer.SizeBytes);
-
-                //AppendLog("ReadFileAlignement," + std::to_string(is_aligned(buffer.BaseAddress, 4)) + "," + std::to_string(is_aligned(buffer.BaseAddress, 8)) + "," + std::to_string(is_aligned(buffer.BaseAddress, 16)) + "," + std::to_string(is_aligned(buffer.BaseAddress, 32)));
-                //AppendLog("MallocAlignement," + std::to_string(is_aligned(lpBuffer, 4)) + "," + std::to_string(is_aligned(lpBuffer, 8)) + "," + std::to_string(is_aligned(lpBuffer, 16)) + "," + std::to_string(is_aligned(lpBuffer, 32)));
-
-                if (buffer.BaseAddress != NULL)
-                {
-                    memcpy(buffer.BaseAddress, lpBuffer, buffer.SizeBytes);
-
-                    cache_value_t value = {};
-                    value.Buffer = buffer;
-
-                    timer_t insertTimer = {};
-                    TimerStart(insertTimer);
-
-                    CacheInsert(FileReadCache, key, value);
-
-                    TimerStop(insertTimer);
-                    TimerStop(missTimer);
-
-                    AppendLog("CacheInsert," + path + "," + std::to_string(position) + "," + std::to_string(nNumberOfBytesToRead) + "," + std::to_string(TimerElapsed(insertTimer).QuadPart) + "," + std::to_string(FileReadCache.SizeBytes) + "," + std::to_string(FileReadCache.Table.size()));
-                    AppendLog("CacheMiss," + path + "," + std::to_string(position) + "," + std::to_string(nNumberOfBytesToRead) + "," + std::to_string(TimerElapsed(missTimer).QuadPart) + "," + std::to_string(FileReadCache.SizeBytes) + "," + std::to_string(FileReadCache.Table.size()));
-                    //AppendLog("Return," + std::string(Path));
-                    return TRUE;
-                }
-                else
-                {
-                    //AppendLog("Failed CacheWrite," + std::string(Path));
-                    return FALSE;
-                }
-            }
-            else
-            {
-                //AppendLog("Failed ReadFile," + std::string(Path));
-                return FALSE;
-            }
-        }
-        else
-        {
-            timer_t hitTimer = {};
-            TimerStart(hitTimer);
-
-            cache_value_t value = CacheGet(FileReadCache, key);
-            if (value.Buffer.BaseAddress != nullptr)
-            {
-                *lpNumberOfBytesRead = value.Buffer.SizeBytes;
-
-                memcpy(lpBuffer, value.Buffer.BaseAddress, value.Buffer.SizeBytes);
-
-                SetFilePointer(hFile, value.Buffer.SizeBytes, NULL, FILE_CURRENT);
-
-                TimerStop(hitTimer);
-
-                AppendLog("CacheHit," + path + "," + std::to_string(position) + "," + std::to_string(nNumberOfBytesToRead) + "," + std::to_string(TimerElapsed(hitTimer).QuadPart) + "," + std::to_string(FileReadCache.SizeBytes) + "," + std::to_string(FileReadCache.Table.size()));
-                //AppendLog("Return," + std::string(Path));
-                return TRUE;
-            }
-            else
-            {
-                //AppendLog("Failed CacheFind," + std::string(Path));
-            }
-        }
-    }
-    else
-    {
-        timer_t readTimer = {};
-        TimerStart(readTimer);
-
-        BOOL ret = ReadFileOriginal(hFile, lpBuffer, nNumberOfBytesToRead, lpNumberOfBytesRead, lpOverlapped);
-        
-        TimerStop(readTimer);
-
-        std::string message = "ReadFile," + path + "," + std::to_string(position) + "," + std::to_string(nNumberOfBytesToRead) + "," + std::to_string(TimerElapsed(readTimer).QuadPart);
-        AppendLog(message);
-
-        return ret;
-    }
 }
