@@ -50,9 +50,12 @@ void GetHardwareAdapter(IDXGIFactory4* pFactory, IDXGIAdapter1** ppAdapter)
 
 // GlobalDevice
 com_ptr<ID3D12Device> gDevice;
+std::mutex gCreateGlobalDeviceMutex;
 
 com_ptr<ID3D12Device> CreateGlobalDevice()
 {
+    std::lock_guard<std::mutex> guard(gCreateGlobalDeviceMutex);
+
     if (gDevice == nullptr)
     {
         com_ptr<IDXGIFactory4> factory1;
@@ -72,6 +75,9 @@ com_ptr<ID3D12Device> CreateGlobalDevice()
 
 BOOL WINAPI ReadFileDirectStorage(HANDLE hFile, LPVOID lpBuffer, DWORD nNumberOfBytesToRead, LPDWORD lpNumberOfBytesRead, LPOVERLAPPED lpOverlapped)
 {
+    timer_t readTimer = {};
+    TimerStart(readTimer);
+
     std::wstring path = GetFilePathW(hFile);
 
     size_t position = GetFilePosition(hFile);
@@ -160,6 +166,11 @@ BOOL WINAPI ReadFileDirectStorage(HANDLE hFile, LPVOID lpBuffer, DWORD nNumberOf
     {
         AppendLog("The DirectStorage request completed successfully!");
     }
+
+    TimerStop(readTimer);
+
+    std::string message = "ReadFileDirectStorage," + /*path + "," +*/ std::to_string(position) + "," + std::to_string(nNumberOfBytesToRead) + "," + std::to_string(TimerElapsed(readTimer).QuadPart);
+    AppendLog(message);
 
     return TRUE;
 }

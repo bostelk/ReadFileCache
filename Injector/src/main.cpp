@@ -5,7 +5,6 @@
 
 #define LOAD_LIBRARY_A "LoadLibraryA"
 #define KERNEL32_DLL "kernel32.dll"
-#define DLL_FILENAME "MyDLL.dll"
 
 LPVOID GetLoadLibraryAAddress(){
     LPVOID lpAddress = NULL;
@@ -44,32 +43,35 @@ LPVOID WriteDllPathToProcess(HANDLE hProc, const char* dllPath){
     return lpAddress;
 }
 
-BOOL InjectDll(HANDLE hProc){
-    LPVOID lpLoadLibraryAddress = NULL;
-    LPVOID lpDllPathInProc = NULL;
-    HANDLE hThread = INVALID_HANDLE_VALUE;
-
+std::string RelativeToExeFile(std::string filename)
+{
     // File path to "Injector.exe".
     char buffer[2048];
     GetModuleFileNameA(NULL, buffer, 2048);
 
-
-    std::string filename(buffer);
+    std::string exeFilePath (buffer);
     std::string directory;
-    const size_t last_slash_idx = filename.rfind('\\');
+    const size_t last_slash_idx = exeFilePath.rfind('\\');
     if (std::string::npos != last_slash_idx)
     {
-        directory = filename.substr(0, last_slash_idx);
+        directory = exeFilePath.substr(0, last_slash_idx);
     }
 
-    std::string dllFilepath = directory + "\\" + DLL_FILENAME;
+    std::string filepath = directory + "\\" + filename;
+    return filepath;
+}
+
+BOOL InjectDll(HANDLE hProc, std::string filepath){
+    LPVOID lpLoadLibraryAddress = NULL;
+    LPVOID lpDllPathInProc = NULL;
+    HANDLE hThread = INVALID_HANDLE_VALUE;
 
     lpLoadLibraryAddress = GetLoadLibraryAAddress();
     if(!lpLoadLibraryAddress){
         printf("GetLoadLibraryAAddress failed!\n");
         return FALSE;
     }
-    lpDllPathInProc = WriteDllPathToProcess(hProc, dllFilepath.c_str());
+    lpDllPathInProc = WriteDllPathToProcess(hProc, filepath.c_str());
     if(!lpDllPathInProc){
         printf("WriteDllPathToProcess failed!\n");
         return FALSE;
@@ -96,7 +98,19 @@ int main() {
         printf("OpenProcess failed to open process with pid %d with error: %lu\n", pid, GetLastError());
         return -1;
     }
-    res = InjectDll(hProc);
+
+    // For ReadFileDirectStorage.
+    res = InjectDll(hProc, "C:\\Windows\\System32\\D3D12.dll");
+    res = InjectDll(hProc, "C:\\Windows\\System32\\D3D12Core.dll");
+    res = InjectDll(hProc, "C:\\Windows\\System32\\DXCore.dll");
+    res = InjectDll(hProc, "C:\\Windows\\System32\\D3DSCache.dll");
+    res = InjectDll(hProc, "C:\\Windows\\System32\\d3d10warp.dll");
+    res = InjectDll(hProc, RelativeToExeFile("dstoragecore.dll"));
+    res = InjectDll(hProc, RelativeToExeFile("dstorage.dll"));
+
+
+    // All ReadFile hooks.
+    res = InjectDll(hProc, RelativeToExeFile("MyDLL.dll"));
     CloseHandle(hProc);
     getchar();
     getchar();
