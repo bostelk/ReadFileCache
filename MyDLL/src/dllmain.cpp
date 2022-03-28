@@ -7,6 +7,7 @@
 #include "readfileoriginal.h"
 #include "readfiletrace.h"
 #include "readfilecache.h"
+#include "readfiledirectstorage.h"
 
 #define is_aligned(POINTER, BYTE_COUNT) \
     (((uintptr_t)(const void *)(POINTER)) % (BYTE_COUNT) == 0)
@@ -47,7 +48,7 @@ int HookReadFile()
     }
 
     AppendLog("Hook");
-    if (!distormx_hook((void**)&pReadFile, (void*)&ReadFileCache))
+    if (!distormx_hook((void**)&pReadFile, (void*)&ReadFileDirectStorage))
     {
         AppendLog("Failed Hook");
         return 1;

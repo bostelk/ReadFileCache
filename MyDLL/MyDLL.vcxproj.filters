@@ -16,6 +16,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="cpp.hint" />
+    <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\readfilecache.h">
@@ -48,6 +49,9 @@
     <ClInclude Include="src\readfileoriginal.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\readfiledirectstorage.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\readfilecache.cpp">
@@ -75,6 +79,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\readfileoriginal.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\readfiledirectstorage.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

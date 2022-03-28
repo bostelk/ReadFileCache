@@ -3,6 +3,15 @@
 #include "logfile.h"
 #include "Windows.h"
 
+std::wstring GetFilePathW(HANDLE hFile)
+{
+    TCHAR PathW[2048];
+    memset(PathW, 0, 2048);
+    GetFinalPathNameByHandle(hFile, PathW, 2048, VOLUME_NAME_DOS);
+
+    return std::wstring(PathW);
+}
+
 std::string GetFilePath(HANDLE hFile)
 {
     TCHAR PathW[2048];
