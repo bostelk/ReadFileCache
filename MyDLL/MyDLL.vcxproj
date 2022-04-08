@@ -171,6 +171,7 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\readfilemapped.h" />
     <ClInclude Include="src\backward.hpp" />
     <ClInclude Include="src\readfiledirectstorage.h" />
     <ClInclude Include="src\readfileoriginal.h" />
@@ -184,6 +185,7 @@
     <ClInclude Include="src\timer.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\readfilemapped.cpp" />
     <ClCompile Include="src\backward.cpp" />
     <ClCompile Include="src\dllmain.cpp" />
     <ClCompile Include="src\readfiledirectstorage.cpp" />
