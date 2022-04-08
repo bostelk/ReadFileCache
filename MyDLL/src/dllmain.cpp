@@ -251,6 +251,7 @@ LPVOID MapViewOfFileDetour(
                 LONG lDistanceToMove = dwFileOffsetLow;
                 LONG lDistanceToMoveHigh = dwFileOffsetHigh;
 
+                // Seek to offset.
                 SetFilePointer(hFile, lDistanceToMove, &lDistanceToMoveHigh, FILE_BEGIN);
 
                 BOOL ret = ReadFile(hFile, lpBuffer, dwNumberOfBytesToMap, &lpNumberOfBytesRead, NULL);
